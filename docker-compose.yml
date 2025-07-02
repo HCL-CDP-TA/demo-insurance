@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+    image: base-industry-app
+    container_name: base-industry-app
+    ports:
+      - "3100:3000"
+    environment:
+      - DATABASE_URL=postgresql://banking:banking123@database:5432/banking_customer
+      - NEXT_PUBLIC_CDP_WRITEKEY=n9wjihaje10vlvbfxe69
+      - NEXT_PUBLIC_CDP_ENDPOINT=https://pl.dev.hxcd.now.hclsoftware.cloud
+    # depends_on:
+    #   - database
+    command: ["npm", "run", "start"]
+
+  # Uncomment the following section to enable creation of the database container
+  # database:
+  #   image: postgres:16
+  #   container_name: banking-database
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: banking
+  #     POSTGRES_PASSWORD: banking123
+  #     POSTGRES_DB: banking_customer
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
