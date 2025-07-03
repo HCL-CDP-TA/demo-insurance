@@ -5,7 +5,7 @@ services:
     image: base-industry-app
     container_name: base-industry-app
     ports:
-      - "3100:3000"
+      - "3200:3000"
     environment:
       - DATABASE_URL=postgresql://banking:banking123@database:5432/banking_customer
       - NEXT_PUBLIC_CDP_WRITEKEY=n9wjihaje10vlvbfxe69
