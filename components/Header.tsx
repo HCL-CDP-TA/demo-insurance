@@ -19,7 +19,6 @@ const Header = () => {
 
   const { brand, getFullPath } = useSiteContext()
   const { logout } = useCdp()
-
   const [isOpen, setIsOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
