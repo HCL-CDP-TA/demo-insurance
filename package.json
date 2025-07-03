@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "docker:rebuild": "docker rm -f banking-database || true && docker-compose down && docker-compose up --build -d",
+    "docker:reset": "docker-compose down -v && docker-compose up --build -d",
+    "docker:logs": "docker-compose logs -f",
+    "docker:ps": "docker-compose ps",
+    "docker:db": "docker exec -it banking-database psql -U banking -d banking_customer"
   },
   "dependencies": {
     "@hcl-cdp-ta/hclcdp-web-sdk-react": "^0.0.11",
