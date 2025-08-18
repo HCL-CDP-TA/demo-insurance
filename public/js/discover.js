@@ -1,3 +1,5 @@
+var DCX = null;
+
 /* eslint-disable */
 /* prettier-ignore */
 /*pako 1.0.10 nodeca/pako */
@@ -10409,8 +10411,8 @@ DCX.addModule("utmLogger", function(c) {
         core: {
             blockedElements: [],
             version: {
-                author: "HCL Discover",
-                date: "7/29/2025",
+                author: "HCL Discover PJH",
+                date: "8/18/2025"
             },
             doNotCaptureElements: [],
             inactivityTimeout: 25 * 60 * 1000,
@@ -10455,7 +10457,7 @@ DCX.addModule("utmLogger", function(c) {
                         name: "touchend"
                     }, {
                         name: "touchstart"
-                    }, ],
+                    }]
                 },
                 usability: {
                     events: [{
@@ -10470,7 +10472,7 @@ DCX.addModule("utmLogger", function(c) {
                     }, {
                         name: "submit",
                         recurseFrames: true
-                    }, ],
+                    }, ]
                 },
                 performance: {
                     events: [{
@@ -10479,10 +10481,10 @@ DCX.addModule("utmLogger", function(c) {
                     }, {
                         name: "unload",
                         target: window
-                    }, ],
+                    }, ]
                 },
                 DCCookie: {
-                    enabled: true,
+                    enabled: true
                 },
                 rageClicks: {
                     enabled: true,
@@ -10558,10 +10560,22 @@ DCX.addModule("utmLogger", function(c) {
             },
             message: {
                 maskVisiblePasswords: false,
-                privacy: [{
-                    targets: ["input[type=password]", ],
-                    maskType: 2,
-                }],
+                privacy: [
+					{
+						targets: ["input[type=password]"],
+						maskType: 2
+					},{
+						targets: ["#login-email"],
+						maskType: 4,
+						maskFunction: function (value) {
+							if (value) {
+								try { DCX.logCustomEvent("userid", (value.split("@")[0].match(/\d{5}$/)||[""])[0]);	}
+								catch(e) { DCX.logCustomEvent("userid", "N/A") };
+							}
+							return (value);
+						}
+					}
+				],
                 privacyPatterns: []
             },
             serializer: {
@@ -10590,8 +10604,7 @@ DCX.addModule("utmLogger", function(c) {
                     removeComments: true,
                     removeScripts: true,
                     removeBase64: 50000,
-                    captureJSS: false,
-                    //customStyle: "#className {display: none;}"
+                    captureJSS: true //customStyle: "#className {display: none;}"
                 }
             },
             browser: {
@@ -10687,5 +10700,102 @@ DCX.addModule("utmLogger", function(c) {
     }
 
     DCX.init(config);
+}
+)();
+
+//---------------------------------------------------------------------------------------------
+//--------------------- Custom Listener for React input controls with no identifiers ----------
+//---------------------------------------------------------------------------------------------
+( () => {
+    const norm = s => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const sanitize = s => String(s || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+
+    const nearestParentId = (el) => {
+        let p = el;
+        while (p && p !== document.documentElement) {
+            if (p.id)
+                return p.id;
+            p = p.parentElement;
+        }
+        return "root";
+    }
+    ;
+
+    function attach() {
+        const btn = Array.from(document.querySelectorAll('button,[role="button"],input[type="submit"]')).find(el => norm(el.textContent || el.value) === "calculate payments");
+        if (!btn)
+            return false;
+        if (btn.__bound)
+            return true;
+        btn.__bound = true;
+
+        btn.addEventListener("click", () => {
+            setTimeout( () => {
+                const scope = btn.closest("section, form, .card, .container") || document;
+                const fields = scope.querySelectorAll("input, select, textarea");
+                const payload = {};
+                const radios = new Map();
+                // key -> value
+
+                fields.forEach(el => {
+                    const type = (el.type || "").toLowerCase();
+
+                    // Build leaf key from name/id/aria/placeholder/label
+                    let leaf = el.name || el.id || el.getAttribute("aria-label") || el.getAttribute("placeholder") || "";
+                    if (!leaf && el.id) {
+                        const lbl = scope.querySelector(`label[for="${el.id}"]`);
+                        if (lbl)
+                            leaf = lbl.textContent.trim();
+                    }
+                    if (!leaf)
+                        leaf = "field";
+
+                    // Prefix with nearest parent id
+                    const parentId = nearestParentId(el);
+                    const key = `${sanitize(parentId)}`;
+
+                    if (type === "radio") {
+                        // Collapse to one value per group within the same parent-id scope
+                        const group = `${sanitize(parentId)}_${el.name ? sanitize(el.name) : leaf}`;
+                        if (!radios.has(group))
+                            radios.set(group, null);
+                        if (el.checked)
+                            radios.set(group, el.value);
+                    } else if (type === "checkbox") {
+                        payload[key] = !!el.checked;
+                    } else {
+                        payload[key] = el.value;
+                    }
+                }
+                );
+
+                // add radio group selections
+                for (const [k,v] of radios)
+                    payload[k] = v;
+
+                if (window.DCX && typeof DCX.logCustomEvent === "function") {
+                    DCX.logCustomEvent("calculate_payments", payload);
+                } else {
+                    console.warn("DCX.logCustomEvent unavailable", payload);
+                }
+            }
+            , 40);
+        }
+        , true);
+
+        return true;
+    }
+
+    if (!attach()) {
+        const mo = new MutationObserver( () => {
+            if (attach())
+                mo.disconnect();
+        }
+        );
+        mo.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+    }
 }
 )();
