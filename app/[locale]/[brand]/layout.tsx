@@ -1,11 +1,13 @@
 import { NextIntlClientProvider, hasLocale } from "next-intl"
 import { notFound } from "next/navigation"
 import { routing } from "@/i18n/routing"
-import Footer from "@/components/Footer"
 import Header from "@/components/Header"
+import Footer from "@/components/Footer"
 import { getMessages } from "@/lib/getMessages"
+import { generateMetadataHelper } from "@/lib/getMetaData"
 import { supportedBrands } from "@/i18n/brands"
 import { supportedLocales } from "@/i18n/locales"
+import type { Metadata } from "next"
 
 export async function generateStaticParams() {
   return supportedBrands.flatMap(brand =>
@@ -14,6 +16,21 @@ export async function generateStaticParams() {
       brand: brand.key,
     })),
   )
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ brand: string; locale: string }>
+}): Promise<Metadata> {
+  const { brand, locale } = await params
+
+  // For the brand layout, generate metadata for the home page by default
+  return generateMetadataHelper({
+    locale,
+    brand,
+    slug: [], // Empty slug represents home page
+  })
 }
 
 export default async function LocaleLayout({

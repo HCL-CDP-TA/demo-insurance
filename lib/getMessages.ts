@@ -61,5 +61,7 @@ export async function getMessages(brand: string, locale: string) {
     arrayMerge: (destinationArray, sourceArray) => sourceArray, // Ensure arrays are overridden completely
   })
 
+  // console.log("Merged Translations:", mergedTranslations)
+
   return mergedTranslations
 }

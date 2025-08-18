@@ -51,8 +51,8 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   }
 
   const setLocale = (localeCode: string) => {
-    const [, , _brandKey, ...rest] = pathname.split("/")
-    const newPath = `/${localeCode}/${_brandKey}${rest.length ? "/" + rest.join("/") : ""}`
+    const [, , brandKey, ...rest] = pathname.split("/")
+    const newPath = `/${localeCode}/${brandKey}${rest.length ? "/" + rest.join("/") : ""}`
     router.push(newPath)
   }
 
