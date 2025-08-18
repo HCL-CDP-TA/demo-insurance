@@ -74,7 +74,15 @@ export default function LoginModal({ children, onLogin }: LoginModalProps) {
 
       const existingData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
       localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify({ ...existingData, loginData: customerData }))
-      localStorage.setItem("isLoggedIn", "true")
+
+      console.log("clearing Interact Session Data")
+      sessionStorage.removeItem("sessionId")
+      sessionStorage.removeItem("ssId")
+      sessionStorage.removeItem("ssTs")
+      sessionStorage.removeItem("audId")
+
+      // Dispatch custom event to notify other components about login change
+      window.dispatchEvent(new CustomEvent("user-login-changed"))
 
       if (isCDPTrackingEnabled) {
         identify({
@@ -136,7 +144,10 @@ export default function LoginModal({ children, onLogin }: LoginModalProps) {
         `${brand.key}_customer_data`,
         JSON.stringify({ ...existingData, loginData: updatedCustomerData }),
       )
-      localStorage.setItem("isLoggedIn", "true")
+
+      // Dispatch custom event to notify other components about login change
+      window.dispatchEvent(new CustomEvent("user-login-changed"))
+
       setIsOpen(false)
 
       if (isCDPTrackingEnabled) {
@@ -215,6 +226,7 @@ export default function LoginModal({ children, onLogin }: LoginModalProps) {
                     onChange={handleLoginChange}
                     className="pl-10 border-slate-300"
                     required
+                    autoFocus
                   />
                 </div>
               </div>

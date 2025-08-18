@@ -31,6 +31,17 @@ const Header = () => {
   // Check login status on component mount
   useEffect(() => {
     checkLoginStatus()
+
+    // Listen for login/logout events
+    const handleLoginChange = () => {
+      checkLoginStatus()
+    }
+
+    window.addEventListener("user-login-changed", handleLoginChange)
+
+    return () => {
+      window.removeEventListener("user-login-changed", handleLoginChange)
+    }
   }, [brand.key, checkLoginStatus])
 
   const handleLogout = () => {
@@ -42,7 +53,16 @@ const Header = () => {
       localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify(customerData))
     }
 
+    console.log("clearing Interact Session Data")
+    sessionStorage.removeItem("sessionId")
+    sessionStorage.removeItem("ssId")
+    sessionStorage.removeItem("ssTs")
+    sessionStorage.removeItem("audId")
+
     setIsLoggedIn(false) // Update state immediately
+
+    // Dispatch custom event to notify other components about logout
+    window.dispatchEvent(new CustomEvent("user-login-changed"))
 
     //Track logout event to CDP
     logout()
@@ -84,7 +104,7 @@ const Header = () => {
                 {t("logout")}
               </Button>
             ) : (
-              <LoginModal onLogin={() => setIsLoggedIn(true)}>
+              <LoginModal>
                 <Button variant="default" className="cursor-pointer">
                   <User className="h-4 w-4 mr-2 cursor-pointer" />
                   {t("login")}
