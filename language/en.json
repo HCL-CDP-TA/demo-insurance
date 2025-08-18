@@ -14,7 +14,7 @@
       "href": "/life-insurance"
     },
     {
-      "label": "Car Insurance",
+      "label": "Auto Insurance",
       "href": "/car-insurance"
     },
     {
@@ -68,8 +68,324 @@
       "pageEventName": "Home"
     },
     "meta": {
-      "title": "Woodburn",
+      "title": "Woodburn Insurance",
       "description": ""
+    },
+    "hero": {
+      "title": "Protecting Your Future, One Policy at a Time",
+      "subtitle": "For over 50 years, Woodburn Insurance has been your trusted partner in securing life's most important moments. Get comprehensive coverage tailored to your needs.",
+      "imageUrl": "/home-hero.jpg",
+      "cta": "Get Free Quote",
+      "features": [
+        {
+          "title": "50+ Years of Trust",
+          "description": "Decades of experience protecting families and businesses across the nation."
+        },
+        {
+          "title": "Award-Winning Service",
+          "description": "Recognized for outstanding customer service and claim handling excellence."
+        },
+        {
+          "title": "500K+ Happy Customers",
+          "description": "Join hundreds of thousands who trust us with their most valuable assets."
+        }
+      ]
+    },
+    "sections": {
+      "products": {
+        "title": "Our Insurance Products",
+        "subtitle": "Comprehensive coverage for every stage of life",
+        "cta": "Learn More"
+      },
+      "testimonials": {
+        "title": "What Our Customers Say",
+        "subtitle": "Real stories from real customers who trust Woodburn Insurance"
+      },
+      "cta": {
+        "title": "Ready to Get Protected?",
+        "subtitle": "Get a personalized quote in just minutes and start protecting what matters most.",
+        "buttons": {
+          "getQuote": "Get Your Free Quote",
+          "speakAgent": "Speak with an Agent"
+        }
+      }
+    },
+    "products": [
+      {
+        "title": "Life Insurance",
+        "description": "Secure your family's financial future with comprehensive life insurance coverage tailored to your needs.",
+        "features": [
+          "Term and whole life options",
+          "Flexible premium payments",
+          "Cash value accumulation",
+          "Beneficiary protection"
+        ]
+      },
+      {
+        "title": "Car Insurance",
+        "description": "Drive with confidence knowing you're protected with our comprehensive auto insurance coverage.",
+        "features": [
+          "Collision and comprehensive",
+          "Liability protection",
+          "24/7 roadside assistance",
+          "Multi-vehicle discounts"
+        ]
+      },
+      {
+        "title": "Home Insurance",
+        "description": "Protect your most valuable investment with our comprehensive homeowners insurance policies.",
+        "features": [
+          "Dwelling and personal property",
+          "Liability coverage",
+          "Natural disaster protection",
+          "Additional living expenses"
+        ]
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "location": "Denver, CO",
+        "quote": "Woodburn Insurance made the entire process so easy. When I needed to file a claim, they handled everything quickly and professionally.",
+        "rating": 5,
+        "product": "Home Insurance"
+      },
+      {
+        "name": "Michael Chen",
+        "location": "Austin, TX",
+        "quote": "Great rates and even better service. I've been with Woodburn for 8 years and wouldn't consider switching to anyone else.",
+        "rating": 5,
+        "product": "Car Insurance"
+      },
+      {
+        "name": "Emily Rodriguez",
+        "location": "Phoenix, AZ",
+        "quote": "The peace of mind that comes with Woodburn's life insurance is invaluable. Their agents really took the time to understand our needs.",
+        "rating": 5,
+        "product": "Life Insurance"
+      }
+    ]
+  },
+  "life-insurance": {
+    "cdp": {
+      "pageEventName": "Life Insurance"
+    },
+    "meta": {
+      "title": "Woodburn Life Insurance",
+      "description": "Protect your family's financial future with comprehensive life insurance coverage"
+    },
+    "hero": {
+      "title": "Life Insurance",
+      "subtitle": "Protect your family's financial future with comprehensive life insurance coverage that grows with your needs.",
+      "cta": "Get Quote Now",
+      "imageUrl": "/life-insurance-hero.jpg"
+    },
+    "stats": {
+      "claimsPaid": {
+        "value": "$50M+",
+        "label": "Claims Paid"
+      },
+      "familiesProtected": {
+        "value": "100K+",
+        "label": "Families Protected"
+      },
+      "lowCost": {
+        "value": "As low as",
+        "label": "$25/month"
+      },
+      "approvalRate": {
+        "value": "98%",
+        "label": "Approval Rate"
+      }
+    },
+    "whyChoose": {
+      "title": "Why Choose Woodburn Life Insurance?",
+      "features": [
+        {
+          "title": "Guaranteed Protection",
+          "description": "Your beneficiaries receive the full death benefit, providing financial security when they need it most."
+        },
+        {
+          "title": "Cash Value Growth",
+          "description": "Build cash value over time that you can borrow against for major life expenses."
+        },
+        {
+          "title": "Flexible Options",
+          "description": "Choose from term or whole life policies with customizable coverage amounts and payment plans."
+        }
+      ]
+    },
+    "coverageOptions": {
+      "title": "Coverage Options",
+      "options": [
+        {
+          "title": "Term Life Insurance",
+          "description": "Affordable coverage for 10, 20, or 30 years",
+          "price": "Starting at $25/month"
+        },
+        {
+          "title": "Whole Life Insurance",
+          "description": "Lifetime coverage with cash value growth",
+          "price": "Starting at $75/month"
+        },
+        {
+          "title": "Universal Life Insurance",
+          "description": "Flexible premiums and investment options",
+          "price": "Starting at $100/month"
+        }
+      ]
+    },
+    "quote": {
+      "title": "Get Your Free Life Insurance Quote",
+      "subtitle": "It takes just 3 minutes to get a personalized quote"
+    }
+  },
+  "car-insurance": {
+    "cdp": {
+      "pageEventName": "Auto Insurance"
+    },
+    "meta": {
+      "title": "Woodburn Auto Insurance",
+      "description": "Drive with confidence with comprehensive auto insurance coverage"
+    },
+    "hero": {
+      "title": "Auto Insurance",
+      "subtitle": "Drive with confidence knowing you're protected with comprehensive auto insurance coverage at competitive rates.",
+      "cta": "Get Quote Now",
+      "imageUrl": "/car-insurance-hero.jpg"
+    },
+    "coverage": {
+      "title": "Complete Auto Insurance Coverage",
+      "subtitle": "Protect yourself and your vehicle with our comprehensive coverage options",
+      "types": [
+        {
+          "title": "Liability Coverage",
+          "description": "Protects you financially if you're at fault in an accident that causes injury or property damage to others.",
+          "features": ["Bodily injury liability", "Property damage liability", "State minimum requirements met"]
+        },
+        {
+          "title": "Collision Coverage",
+          "description": "Covers damage to your vehicle from collisions with other vehicles or objects.",
+          "features": ["Collision with other vehicles", "Single-vehicle accidents", "Flexible deductible options"]
+        },
+        {
+          "title": "Comprehensive Coverage",
+          "description": "Protects against non-collision events like theft, vandalism, weather, and animal strikes.",
+          "features": ["Theft and vandalism", "Weather-related damage", "Glass repair coverage"]
+        }
+      ]
+    },
+    "benefits": {
+      "title": "Additional Benefits & Discounts",
+      "list": [
+        "Multi-vehicle discount up to 25%",
+        "Safe driver rewards program",
+        "Bundling discounts with home insurance",
+        "24/7 roadside assistance included",
+        "Rental car coverage available"
+      ],
+      "savings": {
+        "title": "Average Savings",
+        "amount": "$847",
+        "description": "Average annual savings when switching to Woodburn",
+        "disclaimer": "*Based on a 2023 study of customers who switched from another insurer"
+      }
+    },
+    "quote": {
+      "title": "Get Your Free Car Insurance Quote",
+      "subtitle": "See how much you could save in just minutes"
+    }
+  },
+  "home-insurance": {
+    "cdp": {
+      "pageEventName": "Home Insurance"
+    },
+    "meta": {
+      "title": "Woodburn Home Insurance",
+      "description": "Protect your most valuable investment with comprehensive homeowners insurance"
+    },
+    "hero": {
+      "title": "Home Insurance",
+      "subtitle": "Protect your most valuable investment with comprehensive homeowners insurance that covers your home, belongings, and liability.",
+      "cta": "Get Quote Now",
+      "imageUrl": "/home-insurance-hero.jpg"
+    },
+    "coverage": {
+      "title": "Comprehensive Home Protection",
+      "subtitle": "Four essential coverage areas to protect your home and family",
+      "types": [
+        {
+          "title": "Dwelling Coverage",
+          "description": "Protects the physical structure of your home against covered perils like fire, windstorm, hail, and vandalism.",
+          "features": [
+            "House structure and foundation",
+            "Attached structures (garage, deck)",
+            "Built-in appliances and fixtures",
+            "Replacement cost coverage available"
+          ]
+        },
+        {
+          "title": "Personal Property",
+          "description": "Covers your personal belongings throughout your home and even when you're traveling.",
+          "features": [
+            "Furniture and electronics",
+            "Clothing and jewelry",
+            "Coverage away from home",
+            "Special limits for valuables"
+          ]
+        },
+        {
+          "title": "Liability Protection",
+          "description": "Protects you financially if someone is injured on your property or you accidentally damage someone else's property.",
+          "features": [
+            "Bodily injury liability",
+            "Property damage liability",
+            "Legal defense costs",
+            "Medical payments coverage"
+          ]
+        },
+        {
+          "title": "Additional Living Expenses",
+          "description": "Covers the extra costs of living elsewhere while your home is being repaired or rebuilt after a covered loss.",
+          "features": ["Temporary housing costs", "Increased meal expenses", "Storage costs", "Up to policy limits"]
+        }
+      ]
+    },
+    "disasters": {
+      "title": "Natural Disaster Protection",
+      "description": "Standard homeowners insurance covers many natural disasters, but some require separate coverage. We'll help you understand what's covered and what additional protection you might need.",
+      "covered": {
+        "title": "Covered Perils",
+        "description": "Fire, lightning, windstorm, hail, vandalism, theft"
+      },
+      "additional": {
+        "title": "Additional Coverage Available",
+        "description": "Flood, earthquake, sewer backup (separate policies)"
+      },
+      "addOns": {
+        "title": "Popular Add-Ons",
+        "options": [
+          {
+            "title": "Water Backup Coverage",
+            "description": "Protects against sewer and drain backup damage",
+            "price": "+$15/month"
+          },
+          {
+            "title": "Equipment Breakdown",
+            "description": "Covers home systems and appliances",
+            "price": "+$10/month"
+          },
+          {
+            "title": "Identity Theft Protection",
+            "description": "Comprehensive identity monitoring and recovery",
+            "price": "+$8/month"
+          }
+        ]
+      }
+    },
+    "quote": {
+      "title": "Get Your Free Home Insurance Quote",
+      "subtitle": "Protect your home with a personalized quote in minutes"
     }
   },
   "footer": {
@@ -93,5 +409,58 @@
       }
     },
     "copyright": "© 2025 Woodburn Bank Inc. All rights reserved."
+  },
+  "quoteForm": {
+    "title": "Get Your Quote",
+    "stepIndicator": "Step {step} of 3",
+    "steps": {
+      "personal": {
+        "title": "Personal Information",
+        "fields": {
+          "firstName": "First Name",
+          "lastName": "Last Name",
+          "email": "Email",
+          "phone": "Phone"
+        }
+      },
+      "details": {
+        "title": "Additional Details",
+        "fields": {
+          "dateOfBirth": "Date of Birth",
+          "zipCode": "ZIP Code",
+          "vehicleYear": "Vehicle Year",
+          "vehicleMake": "Vehicle Make",
+          "homeValue": "Home Value",
+          "yearBuilt": "Year Built",
+          "annualIncome": {
+            "label": "Annual Income",
+            "placeholder": "Select income range",
+            "options": {
+              "under-25k": "Under $25,000",
+              "25k-50k": "$25,000 - $50,000",
+              "50k-75k": "$50,000 - $75,000",
+              "75k-100k": "$75,000 - $100,000",
+              "over-100k": "Over $100,000"
+            }
+          }
+        }
+      },
+      "review": {
+        "title": "Review & Submit",
+        "summary": {
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "product": "Product",
+          "insurance": "Insurance"
+        }
+      }
+    },
+    "buttons": {
+      "next": "Next Step",
+      "back": "Back",
+      "submit": "Submit Quote Request"
+    },
+    "successMessage": "Thank you! Your request has been submitted. Our agent will contact you within 24 hours."
   }
 }

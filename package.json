@@ -1,5 +1,5 @@
 {
-  "name": "industry-base",
+  "name": "demo-insurance",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -13,7 +13,7 @@
     "docker:db": "docker exec -it banking-database psql -U banking -d banking_customer"
   },
   "dependencies": {
-    "@hcl-cdp-ta/hclcdp-web-sdk-react": "^0.0.11",
+    "@hcl-cdp-ta/hclcdp-web-sdk-react": "^0.0.12",
     "@prisma/client": "^6.11.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-dialog": "^1.1.14",

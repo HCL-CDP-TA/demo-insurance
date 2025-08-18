@@ -7,6 +7,6 @@ export interface SupportedBrand {
   icon: LucideIcon
 }
 
-const supportedBrands: SupportedBrand[] = [{ key: "woodburn", label: "Woodburn", icon: Landmark }]
+const supportedBrands: SupportedBrand[] = [{ key: "woodburn", label: "Woodburn Insurance", icon: Landmark }]
 
 export { supportedBrands }

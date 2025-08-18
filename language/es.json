@@ -1,1 +1,69 @@
-{}
+{
+  "products": [
+    {
+      "label": "Seguro de Vida",
+      "href": "/life-insurance"
+    },
+    {
+      "label": "Seguro de Auto",
+      "href": "/car-insurance"
+    },
+    {
+      "label": "Seguro de Hogar",
+      "href": "/home-insurance"
+    }
+  ],
+  "quoteForm": {
+    "title": "Obtén tu Cotización",
+    "stepIndicator": "Paso {step} de 3",
+    "steps": {
+      "personal": {
+        "title": "Información Personal",
+        "fields": {
+          "firstName": "Nombre",
+          "lastName": "Apellido",
+          "email": "Correo Electrónico",
+          "phone": "Teléfono"
+        }
+      },
+      "details": {
+        "title": "Detalles Adicionales",
+        "fields": {
+          "dateOfBirth": "Fecha de Nacimiento",
+          "zipCode": "Código Postal",
+          "vehicleYear": "Año del Vehículo",
+          "vehicleMake": "Marca del Vehículo",
+          "homeValue": "Valor de la Casa",
+          "yearBuilt": "Año de Construcción",
+          "annualIncome": {
+            "label": "Ingreso Anual",
+            "placeholder": "Selecciona rango de ingresos",
+            "options": {
+              "under-25k": "Menos de $25,000",
+              "25k-50k": "$25,000 - $50,000",
+              "50k-75k": "$50,000 - $75,000",
+              "75k-100k": "$75,000 - $100,000",
+              "over-100k": "Más de $100,000"
+            }
+          }
+        }
+      },
+      "review": {
+        "title": "Revisar y Enviar",
+        "summary": {
+          "name": "Nombre",
+          "email": "Correo Electrónico",
+          "phone": "Teléfono",
+          "product": "Producto",
+          "insurance": "Seguro"
+        }
+      }
+    },
+    "buttons": {
+      "next": "Siguiente Paso",
+      "back": "Atrás",
+      "submit": "Enviar Solicitud de Cotización"
+    },
+    "successMessage": "¡Gracias! Tu solicitud ha sido enviada. Nuestro agente se pondrá en contacto contigo dentro de 24 horas."
+  }
+}
