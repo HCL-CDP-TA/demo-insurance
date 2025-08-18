@@ -1,7 +1,6 @@
-// hooks/usePageMeta.ts
 import { useEffect } from "react"
 
-export function usePageMeta(title?: string, description?: string) {
+export const usePageMeta = (title?: string, description?: string) => {
   useEffect(() => {
     if (title) {
       document.title = title

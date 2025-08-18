@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -12,16 +12,16 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, Bell, Shield, Globe, Save, RefreshCw, UserCog, FileText } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Settings, User, UserCog, FileText, Copy } from "lucide-react"
 import { useSiteContext } from "@/lib/SiteContext"
-import { useCDPTracking } from "@/lib/hooks/useCDPTracking"
+import { useCdp } from "@hcl-cdp-ta/hclcdp-web-sdk-react"
 import { format } from "date-fns" // Install date-fns for date formatting
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 
 interface SettingsModalProps {
   children: React.ReactNode
@@ -29,9 +29,15 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ children }: SettingsModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const { brand } = useSiteContext()
-  const { isCDPTrackingEnabled, setCDPTrackingEnabled } = useCDPTracking()
+  const {
+    setSessionLogging: cdpSetSessionLogging,
+    setUserLogoutLogging: cdpSetUserLogoutLogging,
+    setInactivityTimeout: cdpSetInactivityTimeout,
+    getIdentityData,
+    getSessionData,
+    getConfig,
+  } = useCdp()
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -40,15 +46,7 @@ export default function SettingsModal({ children }: SettingsModalProps) {
     lastName: "",
     email: "",
     phone: "",
-
-    // Notification Preferences
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    marketingEmails: true,
-    securityAlerts: true,
-    accountUpdates: true,
-    promotionalOffers: false,
+    userId: "",
 
     // Security Settings
     twoFactorAuth: false,
@@ -62,10 +60,6 @@ export default function SettingsModal({ children }: SettingsModalProps) {
     overdraftProtection: true,
     autoSave: false,
     roundUpPurchases: false,
-
-    // Communication Preferences
-    preferredContactMethod: "email",
-    timezone: "America/New_York",
   })
 
   // State for CDP SDK data
@@ -73,15 +67,79 @@ export default function SettingsModal({ children }: SettingsModalProps) {
     userId: "",
     deviceId: "",
     sessionId: "",
+    profileId: "",
     lastActivityTimestamp: "",
     sessionStartTimestamp: "",
   })
 
   // State for loan application data
-  const [, setLoanData] = useState({
+  const [loanData, setLoanData] = useState({
     carLoanApplication: null,
     homeLoanApplication: null,
   })
+
+  // State for writekey override
+  const [writekeyOverride, setWritekeyOverride] = useState("")
+  const [envWritekey, setEnvWritekey] = useState("")
+
+  // State for script settings
+  const [scriptOverride, setScriptOverride] = useState("")
+  const [envScript, setEnvScript] = useState("")
+
+  // State for CDP configuration settings
+  const [sessionLogging, setSessionLogging] = useState(false)
+  const [userLogoutLogging, setUserLogoutLogging] = useState(false)
+  const [inactivityTimeout, setInactivityTimeout] = useState("30")
+  const [, setCdpConfig] = useState<
+    | (Record<string, unknown> & {
+        runtimeSettings?: {
+          sessionLogging: boolean
+          userLogoutLogging: boolean
+          inactivityTimeout: number
+          lastUpdated: string
+        }
+      })
+    | null
+  >(null)
+
+  // Define refreshCdpData function with useCallback to prevent dependency issues
+  const refreshCdpData = useCallback(() => {
+    // Refresh CDP data from SDK
+    const identityData = getIdentityData()
+    const sessionData = getSessionData()
+    const baseConfig = getConfig()
+
+    setCdpData({
+      userId: identityData?.userId || "Not logged in",
+      deviceId: identityData?.deviceId || "Not available",
+      sessionId: sessionData?.sessionId || "Not available",
+      profileId: identityData?.profileId || "Not available",
+      lastActivityTimestamp: sessionData?.lastActivityTimestamp
+        ? format(new Date(sessionData.lastActivityTimestamp), "PPpp")
+        : "Not available",
+      sessionStartTimestamp: sessionData?.sessionStartTimestamp
+        ? format(new Date(sessionData.sessionStartTimestamp), "PPpp")
+        : "Not available",
+    })
+
+    // Create enhanced configuration that includes our runtime settings
+    const enhancedConfig = {
+      ...baseConfig,
+      runtimeSettings: {
+        sessionLogging: sessionLogging,
+        userLogoutLogging: userLogoutLogging,
+        inactivityTimeout: parseInt(inactivityTimeout, 10),
+        lastUpdated: new Date().toISOString(),
+      },
+      appliedSettings: {
+        sessionLogging: `Applied: ${sessionLogging}`,
+        userLogoutLogging: `Applied: ${userLogoutLogging}`,
+        inactivityTimeout: `Applied: ${inactivityTimeout} minutes`,
+      },
+    }
+
+    setCdpConfig(enhancedConfig)
+  }, [getIdentityData, getSessionData, getConfig, sessionLogging, userLogoutLogging, inactivityTimeout, setCdpConfig])
 
   useEffect(() => {
     // Load customer data from local storage if it exists
@@ -93,6 +151,7 @@ export default function SettingsModal({ children }: SettingsModalProps) {
         lastName: storedCustomerData.loginData.lastName || "",
         email: storedCustomerData.loginData.email || "",
         phone: storedCustomerData.loginData.phone || "",
+        userId: storedCustomerData.loginData.id?.toString() || "",
       }))
     }
   }, [brand.key])
@@ -108,6 +167,7 @@ export default function SettingsModal({ children }: SettingsModalProps) {
           lastName: updatedCustomerData.loginData.lastName || "",
           email: updatedCustomerData.loginData.email || "",
           phone: updatedCustomerData.loginData.phone || "",
+          userId: updatedCustomerData.loginData.id?.toString() || "",
         }))
       }
     }
@@ -119,23 +179,51 @@ export default function SettingsModal({ children }: SettingsModalProps) {
   }, [brand.key])
 
   useEffect(() => {
-    // Load CDP SDK data from local storage
-    const userId = localStorage.getItem("hclcdp_user_id") || "Not logged in"
-    const deviceId = localStorage.getItem("hclcdp_device_id") || "Not available"
-    const sessionData = JSON.parse(localStorage.getItem("hclcdp_session") || "{}")
+    // Load CDP SDK data using SDK methods instead of localStorage
+    const identityData = getIdentityData()
+    const sessionData = getSessionData()
+    const baseConfig = getConfig()
 
     setCdpData({
-      userId,
-      deviceId,
-      sessionId: sessionData.sessionId || "Not available",
-      lastActivityTimestamp: sessionData.lastActivityTimestamp
+      userId: identityData?.userId || "Not logged in",
+      deviceId: identityData?.deviceId || "Not available",
+      sessionId: sessionData?.sessionId || "Not available",
+      profileId: identityData?.profileId || "Not available",
+      lastActivityTimestamp: sessionData?.lastActivityTimestamp
         ? format(new Date(sessionData.lastActivityTimestamp), "PPpp")
         : "Not available",
-      sessionStartTimestamp: sessionData.sessionStartTimestamp
+      sessionStartTimestamp: sessionData?.sessionStartTimestamp
         ? format(new Date(sessionData.sessionStartTimestamp), "PPpp")
         : "Not available",
     })
-  }, [brand.key])
+
+    // Create enhanced configuration that includes our runtime settings
+    const enhancedConfig = {
+      ...baseConfig,
+      runtimeSettings: {
+        sessionLogging: sessionLogging,
+        userLogoutLogging: userLogoutLogging,
+        inactivityTimeout: parseInt(inactivityTimeout, 10),
+        lastUpdated: new Date().toISOString(),
+      },
+      appliedSettings: {
+        sessionLogging: `Applied: ${sessionLogging}`,
+        userLogoutLogging: `Applied: ${userLogoutLogging}`,
+        inactivityTimeout: `Applied: ${inactivityTimeout} minutes`,
+      },
+    }
+
+    setCdpConfig(enhancedConfig)
+  }, [
+    brand.key,
+    getIdentityData,
+    getSessionData,
+    getConfig,
+    sessionLogging,
+    userLogoutLogging,
+    inactivityTimeout,
+    setCdpConfig,
+  ])
 
   useEffect(() => {
     if (isOpen) {
@@ -145,8 +233,99 @@ export default function SettingsModal({ children }: SettingsModalProps) {
         carLoanApplication: customerData.carLoanApplication || null,
         homeLoanApplication: customerData.homeLoanApplication || null,
       })
+
+      // Load writekey override from cookie
+      const cookieName = `${brand.key}_cdp_writekey_override`
+      const cookieValue = document.cookie
+        .split("; ")
+        .find(row => row.startsWith(`${cookieName}=`))
+        ?.split("=")[1]
+
+      const storedOverride = cookieValue ? decodeURIComponent(cookieValue) : ""
+      setWritekeyOverride(storedOverride)
+
+      // Set the environment writekey (this would normally come from process.env but we'll simulate it)
+      setEnvWritekey(process.env.NEXT_PUBLIC_CDP_WRITEKEY || "Not configured")
+
+      // Load script settings from localStorage
+      const scriptOverrideValue = localStorage.getItem("discover_script_override") || ""
+      setScriptOverride(scriptOverrideValue)
+
+      // Set the environment script URL
+      setEnvScript(process.env.NEXT_PUBLIC_DISCOVER_DEFAULT_SCRIPT || "Not configured")
+
+      // Load CDP settings from localStorage or CDP config defaults
+      const baseConfig = getConfig()
+
+      // Check localStorage first, then fall back to CDP config defaults
+      const savedSessionLogging = localStorage.getItem("cdp_session_logging")
+      const savedUserLogoutLogging = localStorage.getItem("cdp_user_logout_logging")
+      const savedInactivityTimeout = localStorage.getItem("cdp_inactivity_timeout")
+
+      // Use localStorage if available, otherwise use CDP config defaults
+      const sessionLoggingValue =
+        savedSessionLogging !== null ? savedSessionLogging === "true" : baseConfig?.enableSessionLogging ?? false
+
+      const userLogoutLoggingValue =
+        savedUserLogoutLogging !== null
+          ? savedUserLogoutLogging === "true"
+          : baseConfig?.enableUserLogoutLogging ?? false
+
+      const inactivityTimeoutValue =
+        savedInactivityTimeout !== null ? savedInactivityTimeout : baseConfig?.inactivityTimeout?.toString() ?? "30"
+
+      setSessionLogging(sessionLoggingValue)
+      setUserLogoutLogging(userLogoutLoggingValue)
+      setInactivityTimeout(inactivityTimeoutValue)
+
+      // Apply settings to CDP SDK on load
+      cdpSetSessionLogging(sessionLoggingValue)
+      cdpSetUserLogoutLogging(userLogoutLoggingValue)
+      const timeoutMinutes = parseInt(inactivityTimeoutValue, 10)
+      if (!isNaN(timeoutMinutes) && timeoutMinutes > 0) {
+        cdpSetInactivityTimeout(timeoutMinutes)
+      }
+
+      // Refresh CDP identity data when modal opens to pick up latest login/logout state
+      // Use setTimeout to ensure state updates have been applied first
+      setTimeout(() => {
+        refreshCdpData()
+      }, 0)
     }
-  }, [isOpen, brand.key])
+  }, [
+    isOpen,
+    brand.key,
+    cdpSetSessionLogging,
+    cdpSetUserLogoutLogging,
+    cdpSetInactivityTimeout,
+    getConfig,
+    refreshCdpData,
+  ])
+
+  // const handleSave = async () => {
+  //   setIsSaving(true)
+
+  //   // Simulate saving process
+  //   setTimeout(() => {
+  //     // localStorage.setItem(`${brand.key}_settings`, JSON.stringify(settings))
+
+  //     // Track settings change for CDP
+  //     // const customerData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
+  //     // localStorage.setItem(
+  //     //   `${brand.key}_customer_data`,
+  //     //   JSON.stringify({
+  //     //     ...customerData,
+  //     //     settingsUpdated: {
+  //     //       timestamp: new Date().toISOString(),
+  //     //       preferences: settings,
+  //     //     },
+  //     //   }),
+  //     // )
+
+  //     setIsSaving(false)
+  //     setIsOpen(false)
+  //   }, 1000)
+  // }
 
   const handleSettingChange = (key: string, value: unknown) => {
     setSettings(prev => ({
@@ -155,43 +334,97 @@ export default function SettingsModal({ children }: SettingsModalProps) {
     }))
   }
 
+  // Handle CDP settings changes
+  const handleSessionLoggingChange = (checked: boolean) => {
+    setSessionLogging(checked)
+    localStorage.setItem("cdp_session_logging", checked.toString())
+    // Apply setting to CDP SDK
+    cdpSetSessionLogging(checked)
+    // Refresh configuration display to show updated settings
+    refreshCdpData()
+  }
+
+  const handleUserLogoutLoggingChange = (checked: boolean) => {
+    setUserLogoutLogging(checked)
+    localStorage.setItem("cdp_user_logout_logging", checked.toString())
+    // Apply setting to CDP SDK
+    cdpSetUserLogoutLogging(checked)
+    // Refresh configuration display to show updated settings
+    refreshCdpData()
+  }
+
+  const handleInactivityTimeoutChange = (value: string) => {
+    setInactivityTimeout(value)
+    localStorage.setItem("cdp_inactivity_timeout", value)
+    // Apply setting to CDP SDK (convert string to number)
+    const timeoutMinutes = parseInt(value, 10)
+    if (!isNaN(timeoutMinutes) && timeoutMinutes > 0) {
+      cdpSetInactivityTimeout(timeoutMinutes)
+    }
+    // Refresh configuration display to show updated settings
+    refreshCdpData()
+  }
+
+  // Handle copying user ID to clipboard
+  const handleCopyUserId = async () => {
+    if (settings.userId) {
+      try {
+        await navigator.clipboard.writeText(settings.userId)
+        // You could add a toast notification here if you have one
+        console.log("User ID copied to clipboard:", settings.userId)
+      } catch (err) {
+        console.error("Failed to copy user ID:", err)
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea")
+        textArea.value = settings.userId
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+      }
+    }
+  }
+
   const clearCdpData = () => {
-    localStorage.removeItem("hclcdp_user_id")
-    localStorage.removeItem("hclcdp_device_id")
-    localStorage.removeItem("hclcdp_session")
+    // Clear localStorage (backward compatibility)
+    localStorage.removeItem("hclcdp_identity_data")
+    sessionStorage.removeItem("hclcdp_session")
+
+    // Update UI to reflect cleared state
     setCdpData({
       userId: "Not logged in",
       deviceId: "Not available",
       sessionId: "Not available",
+      profileId: "Not available",
       lastActivityTimestamp: "Not available",
       sessionStartTimestamp: "Not available",
     })
   }
 
-  // const clearCarLoanData = () => {
-  //   const customerData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
-  //   delete customerData.carLoanApplication
-  //   localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify(customerData))
-  //   setLoanData(prev => ({
-  //     ...prev,
-  //     carLoanApplication: null,
-  //   }))
-  // }
+  const clearCarLoanData = () => {
+    const customerData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
+    delete customerData.carLoanApplication
+    localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify(customerData))
+    setLoanData(prev => ({
+      ...prev,
+      carLoanApplication: null,
+    }))
+  }
 
-  // const clearHomeLoanData = () => {
-  //   const customerData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
-  //   delete customerData.homeLoanApplication
-  //   localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify(customerData))
-  //   setLoanData(prev => ({
-  //     ...prev,
-  //     homeLoanApplication: null,
-  //   }))
-  // }
+  const clearHomeLoanData = () => {
+    const customerData = JSON.parse(localStorage.getItem(`${brand.key}_customer_data`) || "{}")
+    delete customerData.homeLoanApplication
+    localStorage.setItem(`${brand.key}_customer_data`, JSON.stringify(customerData))
+    setLoanData(prev => ({
+      ...prev,
+      homeLoanApplication: null,
+    }))
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl h-[50vh] flex flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[95vh] h-[90vh] sm:h-[70vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
@@ -213,17 +446,17 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                 <User className="h-4 w-4" />
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 cursor-pointer">
-                <Bell className="h-4 w-4" />
-                Notifications
-              </TabsTrigger>
               <TabsTrigger value="demo" className="flex items-center gap-2 cursor-pointer">
                 <UserCog className="h-4 w-4" />
-                CDP Demo Settings
+                CDP Settings
               </TabsTrigger>
-              <TabsTrigger value="applicationData" className="flex items-center gap-2 cursor-pointer">
+              <TabsTrigger value="script" className="flex items-center gap-2 cursor-pointer">
                 <FileText className="h-4 w-4" />
-                Application Data
+                Discover Script
+              </TabsTrigger>
+              <TabsTrigger value="loanData" className="flex items-center gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                Loan Application Data
               </TabsTrigger>
             </TabsList>
 
@@ -257,14 +490,38 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={settings.email}
-                        onChange={e => handleSettingChange("email", e.target.value)}
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={settings.email}
+                          onChange={e => handleSettingChange("email", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="userId">User ID</Label>
+                        <div className="relative">
+                          <Input
+                            id="userId"
+                            value={settings.userId}
+                            readOnly
+                            className="bg-slate-50 cursor-not-allowed pr-10"
+                            placeholder="Not available"
+                          />
+                          {settings.userId && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handleCopyUserId}
+                              className="absolute right-1 top-1 h-8 w-8 hover:bg-slate-200 transition-colors"
+                              title="Copy user ID to clipboard">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number</Label>
@@ -276,205 +533,9 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
-                      Communication Preferences
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Preferred Contact Method</Label>
-                      <Select
-                        value={settings.preferredContactMethod}
-                        onValueChange={value => handleSettingChange("preferredContactMethod", value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="phone">Phone</SelectItem>
-                          <SelectItem value="sms">SMS</SelectItem>
-                          <SelectItem value="mail">Mail</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Time Zone</Label>
-                      <Select value={settings.timezone} onValueChange={value => handleSettingChange("timezone", value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                          <SelectItem value="America/Chicago">Central Time</SelectItem>
-                          <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                          <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
 
-              {/* Notification Settings */}
-              <TabsContent value="notifications" className="space-y-6 mt-0">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5" />
-                      Notification Preferences
-                    </CardTitle>
-                    <CardDescription>Choose how you want to receive updates and alerts</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Email Notifications</Label>
-                          <p className="text-sm text-slate-600">Receive notifications via email</p>
-                        </div>
-                        <Switch
-                          checked={settings.emailNotifications}
-                          onCheckedChange={checked => handleSettingChange("emailNotifications", checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">SMS Notifications</Label>
-                          <p className="text-sm text-slate-600">Receive text message alerts</p>
-                        </div>
-                        <Switch
-                          checked={settings.smsNotifications}
-                          onCheckedChange={checked => handleSettingChange("smsNotifications", checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Push Notifications</Label>
-                          <p className="text-sm text-slate-600">Receive mobile app notifications</p>
-                        </div>
-                        <Switch
-                          checked={settings.pushNotifications}
-                          onCheckedChange={checked => handleSettingChange("pushNotifications", checked)}
-                        />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Notification Types</h4>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Security Alerts</Label>
-                          <p className="text-sm text-slate-600">Login attempts and security events</p>
-                        </div>
-                        <Switch
-                          checked={settings.securityAlerts}
-                          onCheckedChange={checked => handleSettingChange("securityAlerts", checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Account Updates</Label>
-                          <p className="text-sm text-slate-600">Balance changes and transactions</p>
-                        </div>
-                        <Switch
-                          checked={settings.accountUpdates}
-                          onCheckedChange={checked => handleSettingChange("accountUpdates", checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Marketing Emails</Label>
-                          <p className="text-sm text-slate-600">Product updates and bank news</p>
-                        </div>
-                        <Switch
-                          checked={settings.marketingEmails}
-                          onCheckedChange={checked => handleSettingChange("marketingEmails", checked)}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-base">Promotional Offers</Label>
-                          <p className="text-sm text-slate-600">Special deals and limited-time offers</p>
-                        </div>
-                        <Switch
-                          checked={settings.promotionalOffers}
-                          onCheckedChange={checked => handleSettingChange("promotionalOffers", checked)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Security Settings */}
-              <TabsContent value="security" className="space-y-6 mt-0">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Security Settings
-                    </CardTitle>
-                    <CardDescription>Manage your account security and authentication preferences</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Two-Factor Authentication</Label>
-                        <p className="text-sm text-slate-600">Add an extra layer of security to your account</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {settings.twoFactorAuth && <Badge variant="secondary">Enabled</Badge>}
-                        <Switch
-                          checked={settings.twoFactorAuth}
-                          onCheckedChange={checked => handleSettingChange("twoFactorAuth", checked)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Biometric Login</Label>
-                        <p className="text-sm text-slate-600">Use fingerprint or face recognition</p>
-                      </div>
-                      <Switch
-                        checked={settings.biometricLogin}
-                        onCheckedChange={checked => handleSettingChange("biometricLogin", checked)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Session Timeout</Label>
-                      <Select
-                        value={settings.sessionTimeout}
-                        onValueChange={value => handleSettingChange("sessionTimeout", value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="15">15 minutes</SelectItem>
-                          <SelectItem value="30">30 minutes</SelectItem>
-                          <SelectItem value="60">1 hour</SelectItem>
-                          <SelectItem value="120">2 hours</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Banking Preferences */}
+              {/* CDP Settings */}
               <TabsContent value="demo" className="space-y-6 mt-0">
                 {/* CDP Settings */}
                 <Card>
@@ -482,28 +543,131 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                     <CardTitle className="flex items-center gap-2">
                       <UserCog className="h-5 w-5" />
                       CDP Configuration
+                      {writekeyOverride && <Badge variant="outline">Override Active</Badge>}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Enable CDP Logging</Label>
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Writekey Configuration</h4>
+                      <div className="space-y-2">
+                        <Label>Current Environment Writekey</Label>
+                        <p className="text-sm text-slate-600 font-mono bg-slate-50 p-2 rounded border break-all">
+                          {envWritekey}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {isCDPTrackingEnabled && <Badge>Enabled</Badge>}
-                        <Switch
-                          className="cursor-pointer"
-                          checked={isCDPTrackingEnabled}
-                          onCheckedChange={checked => setCDPTrackingEnabled(checked)}
+                      <div className="space-y-2">
+                        <Label htmlFor="writekey-override">Writekey Override</Label>
+                        <Input
+                          id="writekey-override"
+                          type="text"
+                          placeholder="Enter writekey to override environment setting"
+                          value={writekeyOverride}
+                          onChange={e => setWritekeyOverride(e.target.value)}
+                          className="font-mono"
                         />
+                        <p className="text-xs text-slate-500">
+                          Leave empty to use the environment writekey. Override takes effect after page refresh.
+                        </p>
+                      </div>
+                      {writekeyOverride && (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-yellow-100">
+                              Active Override
+                            </Badge>
+                            <span className="text-sm text-yellow-800">Using custom writekey</span>
+                          </div>
+                          <p className="text-xs text-yellow-700 mt-1 font-mono break-all">{writekeyOverride}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            // Set cookie with 1 year expiration
+                            const cookieName = `${brand.key}_cdp_writekey_override`
+                            const cookieValue = encodeURIComponent(writekeyOverride)
+                            const expiryDate = new Date()
+                            expiryDate.setFullYear(expiryDate.getFullYear() + 1)
+                            document.cookie = `${cookieName}=${cookieValue}; expires=${expiryDate.toUTCString()}; path=/`
+                            // Show a temporary success message or trigger a page refresh notification
+                          }}
+                          className="cursor-pointer">
+                          Save Override
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setWritekeyOverride("")
+                            // Remove cookie by setting expiry to past date
+                            const cookieName = `${brand.key}_cdp_writekey_override`
+                            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`
+                          }}
+                          className="cursor-pointer">
+                          Clear Override
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            window.location.reload()
+                          }}
+                          className="cursor-pointer">
+                          Refresh Page
+                        </Button>
                       </div>
                     </div>
-                    <div className="text-xs">
-                      <p className="text-slate-600">
-                        Enabling this option allows customer data to be logged for HCL CDP tracking using the CDP SDK.
-                        This setting takes effect immediately in this browser only, persists between sessions and
-                        applies exclusively to the selected brand, {brand.label}.
-                      </p>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <h4 className="font-medium">CDP Settings</h4>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="session-logging">Session Logging</Label>
+                            <div className="text-sm text-muted-foreground">
+                              Send Session_Start and Session_End events to CDP
+                            </div>
+                          </div>
+                          <Switch
+                            id="session-logging"
+                            checked={sessionLogging}
+                            onCheckedChange={handleSessionLoggingChange}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="logout-logging">User Logout Logging</Label>
+                            <div className="text-sm text-muted-foreground">
+                              Capture a Logout event to the CDP when the user logs out
+                            </div>
+                          </div>
+                          <Switch
+                            id="logout-logging"
+                            checked={userLogoutLogging}
+                            onCheckedChange={handleUserLogoutLoggingChange}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="inactivity-timeout">Session Timeout (minutes)</Label>
+                          <Input
+                            id="inactivity-timeout"
+                            type="number"
+                            min="1"
+                            max="120"
+                            value={inactivityTimeout}
+                            onChange={e => handleInactivityTimeoutChange(e.target.value)}
+                            className="w-32"
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Time before the session ends due to inactivity. Set to 0 for no timeout. This does not
+                            affect the user&apos;s login.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -512,13 +676,29 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <UserCog className="h-5 w-5" />
-                      CDP SDK
+                      CDP SDK Data
                     </CardTitle>
+                    <CardDescription>Live data from the HCL CDP SDK</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
+                      <Label>Active Writekey</Label>
+                      <p className="text-sm text-slate-600 font-mono bg-slate-50 p-2 rounded border break-all">
+                        {writekeyOverride || envWritekey}
+                        {writekeyOverride && (
+                          <Badge className="ml-2" variant="outline">
+                            Override
+                          </Badge>
+                        )}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
                       <Label>User ID</Label>
                       <p className="text-sm text-slate-600">{cdpData.userId}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Profile ID</Label>
+                      <p className="text-sm text-slate-600">{cdpData.profileId}</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Device ID</Label>
@@ -536,28 +716,110 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                       <Label>Session Start Timestamp</Label>
                       <p className="text-sm text-slate-600">{cdpData.sessionStartTimestamp}</p>
                     </div>
-                    <Button variant="outline" onClick={clearCdpData} className="cursor-pointer">
-                      Clear CDP SDK Data
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={refreshCdpData} className="cursor-pointer">
+                        Refresh Data
+                      </Button>
+                      <Button variant="outline" onClick={clearCdpData} className="cursor-pointer">
+                        Clear CDP SDK Data
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              {/* Application Data */}
-              <TabsContent value="applicationData" className="space-y-6 mt-0">
+              {/* Script Settings */}
+              <TabsContent value="script" className="space-y-6 mt-0">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Application Data
+                      Discover Script Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Separator />
+
+                    {/* Environment Script URL */}
+                    <div className="space-y-2">
+                      <Label>Environment Script URL</Label>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm font-mono text-gray-700 break-all">{envScript}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Set via NEXT_PUBLIC_DISCOVER_DEFAULT_SCRIPT environment variable
+                      </p>
+                    </div>
+
+                    {/* Script Override */}
+                    <div className="space-y-2">
+                      <Label htmlFor="script-override">Script URL Override</Label>
+                      <Input
+                        id="script-override"
+                        value={scriptOverride}
+                        onChange={e => setScriptOverride(e.target.value)}
+                        placeholder="eg https://example.com/custom-discover.js"
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Override the environment script URL with a custom one (optional)
+                      </p>
+                      {scriptOverride && (
+                        <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded-md">
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="secondary" className="w-fit bg-yellow-100 text-yellow-800">
+                              Active Override
+                            </Badge>
+                            <span className="text-sm text-yellow-800">Using custom script URL</span>
+                          </div>
+                          <p className="text-xs text-yellow-700 mt-1 font-mono break-all">{scriptOverride}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            // Save only the script override URL
+                            localStorage.setItem("discover_script_override", scriptOverride)
+                            // Reload page to apply changes
+                            window.location.reload()
+                          }}
+                          className="cursor-pointer">
+                          Save Override
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setScriptOverride("")
+                            // Clear localStorage
+                            localStorage.removeItem("discover_script_override")
+                            // Reload page to apply changes
+                            window.location.reload()
+                          }}
+                          className="cursor-pointer">
+                          Clear Override
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Loan Application Data */}
+              <TabsContent value="loanData" className="space-y-6 mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Loan Application Data
                     </CardTitle>
                     <CardDescription>
-                      View and manage application data stored in local storage for {brand.label}
+                      View and manage loan application data stored in local storage for {brand.label}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Car Loan Application */}
-                    {/* <div className="space-y-2">
+                    <div className="space-y-2">
                       <Label>Car Loan Application</Label>
                       {loanData.carLoanApplication ? (
                         <Accordion type="single" collapsible>
@@ -585,10 +847,10 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                         disabled={!loanData.carLoanApplication}>
                         Clear Car Loan Application Data
                       </Button>
-                    </div> */}
+                    </div>
 
                     {/* Home Loan Application */}
-                    {/* <div className="space-y-2">
+                    <div className="space-y-2">
                       <Label>Home Loan Application</Label>
                       {loanData.homeLoanApplication ? (
                         <Accordion type="single" collapsible>
@@ -616,7 +878,7 @@ export default function SettingsModal({ children }: SettingsModalProps) {
                         disabled={!loanData.homeLoanApplication}>
                         Clear Home Loan Application Data
                       </Button>
-                    </div> */}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -626,10 +888,10 @@ export default function SettingsModal({ children }: SettingsModalProps) {
 
         <div className="flex justify-between pt-6 border-t flex-shrink-0">
           <Button variant="outline" onClick={() => setIsOpen(false)} className="cursor-pointer">
-            Cancel
+            Close
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" className="cursor-pointer flex items-center gap-2">
+            {/* <Button variant="outline" className="cursor-pointer flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
               Reset to Defaults
             </Button>
@@ -639,7 +901,7 @@ export default function SettingsModal({ children }: SettingsModalProps) {
               className="cursor-pointer flex items-center gap-2">
               <Save className="h-4 w-4" />
               {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            </Button> */}
           </div>
         </div>
       </DialogContent>

@@ -1,43 +1,56 @@
-import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server"
+import { getIndustryPrismaClient } from "@/lib/database-setup"
 import bcrypt from "bcryptjs"
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { email, password, firstName, lastName, phone } = body
+    const { email, password, firstName, lastName, phone } = await request.json()
 
     if (!email || !password || !firstName || !lastName) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 })
+      return NextResponse.json({ error: "Email, password, first name, and last name are required" }, { status: 400 })
     }
 
-    const existing = await prisma.customer.findUnique({ where: { email } })
-    if (existing) {
-      return NextResponse.json({ error: "errors.userExists" }, { status: 400 })
-    }
+    // Get industry-specific Prisma client
+    const vertical = process.env.INDUSTRY_VERTICAL || "banking"
+    const prisma = await getIndustryPrismaClient(vertical)
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    const newUser = await prisma.customer.create({
-      data: { email, password: hashedPassword, firstName, lastName, phone },
+    // Check if user already exists
+    const existingUser = await prisma.customer.findUnique({
+      where: { email: email.toLowerCase() },
     })
 
-    return NextResponse.json(
-      {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        phone: newUser.phone,
-      },
-      { status: 201 },
-    )
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("Register API error:", error)
-      return NextResponse.json({ error: "errors.genericError", consoleError: error.message }, { status: 500 })
+    if (existingUser) {
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
     }
-    console.error("Register API unknown error:", error)
-    return NextResponse.json({ error: "errors.genericError" }, { status: 500 })
+
+    // Hash password
+    const saltRounds = 12
+    const hashedPassword = await bcrypt.hash(password, saltRounds)
+
+    // Create user
+    const user = await prisma.customer.create({
+      data: {
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        firstName,
+        lastName,
+        phone: phone || null,
+      },
+    })
+
+    // Return user data (without password)
+    const userData = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+    }
+
+    await prisma.$disconnect()
+    return NextResponse.json(userData)
+  } catch (error) {
+    console.error("Registration error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -1,4 +1,4 @@
-import { Landmark } from "lucide-react"
+import { Building, Building2, Landmark } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
 export interface SupportedBrand {
@@ -7,6 +7,10 @@ export interface SupportedBrand {
   icon: LucideIcon
 }
 
-const supportedBrands: SupportedBrand[] = [{ key: "woodburn", label: "Woodburn", icon: Landmark }]
+const supportedBrands: SupportedBrand[] = [
+  { key: "woodburn", label: "Woodburn Bank", icon: Landmark },
+  { key: "firstbank", label: "First Bank", icon: Building2 },
+  { key: "national", label: "National Bank", icon: Building },
+]
 
 export { supportedBrands }
